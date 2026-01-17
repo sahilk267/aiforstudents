@@ -1,0 +1,52 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build
+      run: npm run build
+      env:
+        VITE_API_URL: ${{ secrets.PREVIEW_API_URL }}
+        VITE_GA_TRACKING_ID: ${{ secrets.PREVIEW_GA_TRACKING_ID }}
+        VITE_AUTH_DOMAIN: ${{ secrets.PREVIEW_AUTH_DOMAIN }}
+        VITE_AUTH_CLIENT_ID: ${{ secrets.PREVIEW_AUTH_CLIENT_ID }}
+    
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        vercel-args: '--prod'
+    
+    - name: Comment PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const preview_url = `https://${process.env.VERCEL_URL}`;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `✨ Preview deployment is ready! You can view it at: ${preview_url}`
+          })
+      env:
+        VERCEL_URL: ${{ steps.deploy.outputs.url }} 
