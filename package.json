@@ -14,7 +14,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "type-check": "tsc --noEmit",
-    "prepare": "husky install",
+    "prepare": "husky install || exit 0",
     "deploy:vercel": "vercel --prod",
     "deploy:netlify": "netlify deploy --prod",
     "deploy:build": "npm run build",
